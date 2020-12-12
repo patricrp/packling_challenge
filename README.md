@@ -284,4 +284,23 @@ GROUP BY res.client_id
 
 After having all this info we can assign a value to each source and create a series called: source_score for each client_id. Then we can assign a value to each client_id based on their lifetime value on a serie called: ltv_score. And a serie to score each client_id based on the volume, called: volume_score.
 
-Finally, we would be able to sum all the scores for each client and order DESC to know which are the best clients. 
+Finally, we will be able to sum all the scores for each client and order DESC to know which are the best clients. 
+
+### Visualize the data that is provided.
+If I had had shipments data loaded properly I would be able to append screenshots of each query and results. 
+
+### Insights
+a.     Did you find anything by doing the above activities?
+
+Knowing which are best and worst clients based on hired sources, lifetime value and if their shipments are higher than hired or not. 
+
+Clients need to have a client_id to be recorded and shipments need all the info about weight, revenue, costs and source. But we can estimate an average without having one of this data. 
+
+
+b.     What suggestions would you make to the business?
+ It would be interesting to push all clients to hire more volume of estimated_shipments_volume if required to avoid extra costs and increase profitability. 
+
+
+c.     What other data would you need to derive further insights?
+
+It would be helpful to include feedback from sources and clients to estimate a deviation based on number of shipments or service quality. Also having info about the final billing would be helpful to know how was the deviation and if the business could assume those costs. 

@@ -224,8 +224,60 @@ SELECT shi.client_id,
     shi.estimated_volume
 FROM shipments shi
 LEFT JOIN clients cli
-WHERE shi.client_id = cli.client_id
+ON shi.client_id = cli.client_id
 GROUP BY shi.client_id
 ```
 
 If we create two new series, one with the minimun and the other with the maximum volume of estimated deliveries, we can compare the number of shipment with both series. If the number of deliveries is less than the series minimum, those clients are using less than hired. On the other way, if the number of deliveries is higher than the max, those clients are using more deliveries than hired.
+
+### Who are our best clients? (think about a scoring rate based on the technology used, lifetime value, profitability, volume, etc...)
+
+
+To create a rate we are going to score the following:
+
+- **Technology used**, as the source. If there is one of the most used source used in our company, the score will be higher. 
+
+We have to consult which are the sources most used order descendt by the number of shipments.
+
+```SQL - technology
+SELECT shipment_source,
+    COUNT(client_id) as total_volume_source
+FROM shipments
+ORDER BY total_volume_source DESC
+```
+
+- **Lifetime value**, as the calculation of number of deliveries, revenue and the profitability that is related. If the profitability is on top, the socre will be higher.
+
+```SQL - Lifetime Value
+SELECT 
+    client_id,
+    COUNT(shipment_reference) as total_deliveries,
+    SUM(net_revenue) as total_revenue,
+    SUM(net_costs) as total_costs,
+    (COUNT(shipment_reference) * SUM(net_revenue)) * ((SUM(net_revenue) - SUM(net_costs))/100) as lifetime_value
+FROM shipments
+ORDER BY lifetime_value DESC
+```
+
+- Volume, as the count of number of shipments that is in line with the estimated deliveries volume hired by the client. (Using the previous max. estimated deliveries series proposed)
+
+```SQL - volume
+SELECT res.client_id
+    CASE WHEN res.max_deliveries < res.total_shipments THEN 1
+        WHEN res.max_deliveries > res.total_shipments THEN -1
+        ELSE 0
+    END AS score_vol
+FROM
+(SELECT 
+    cli.client_id as client_id,
+    cli.max_deliveries as max_deliveries,
+    shi.total_shipments as total_shipments
+FROM clients cli
+LEFT JOIN
+(SELECT
+    client_id,
+    COUNT(shipment_reference) as total_shipments
+FROM shipments) shi
+ON cli.client_id = shi.client_id)res
+GROUP BY res.client_id
+```

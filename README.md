@@ -1,4 +1,4 @@
-# packling_challenge
+# packlink_challenge
 
 SQL Challenge for Data Analysts
 

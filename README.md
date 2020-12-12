@@ -194,20 +194,21 @@ GROUP BY shipment_source, country WITH ROLLUP
 
 Profitability could be calculated subtracting costs to revenue. If there is no requirement about date profitability, I decided to analyse all together to know the most and less profitability clients we have record for.
 
-The query should show the top and bottom rows. I limit the query to show 3 clients of each type.
+The query should show the top and bottom rows. I limit the query to show 5 clients of each type.
 
-``` SQL - profitability
-SELECT
-    client_id,
-    SUM(net_revenue) - SUM(net_costs) as profitability
-FROM shipments
-ORDER BY profitability ASC
-LIMIT 3
-UNION ALL
-SELECT
-    client_id,
-    SUM(net_revenue) - SUM(net_costs) as profitability
-FROM shipments
-ORDER BY profitability DESC
-LIMIT 3
+```SQL - Profitability
+
+SELECT * 
+FROM 
+(SELECT prof.*, ROW_NUMBER() OVER (Order BY prof.profitability) as TopFive
+   ,ROW_NUMBER() OVER (Order BY prof.profitability Desc) as BottomFive
+   FROM 
+   (SELECT
+       client_id,
+        SUM(net_revenue) - SUM(net_costs) as profitability
+    FROM shipments
+    GROUP BY client_id
+   ) prof
+)
+WHERE TopFive <=5 OR BottomFive <=5
 ```

@@ -2,7 +2,7 @@
 
 SQL Challenge for Data Analysts
 
-## Load Data in a relational database
+## 1.Load Data in a relational database
 
 ### BIGQUERY
 
@@ -54,9 +54,9 @@ FROM  `packlink.clients_base`
 ```
 
 
-I repeated the process for shipments, creating an empty table called "shipments_base" to see all data and process it later. The shipments csv was a large file so I upload it to Google Cloud Storage and started the process creating a new table called "shipments_base" with autodetected schema and comma separated values to see raw data. I saw that the csv was a string separated by semicolons with the following info: shipment_reference + client_id + product + country + order_date + invoiced_weight + net revenue + net_cost + shipment_source. I repeated this process, deleting the first row to avoid headers.
+I repeated the process for shipments, creating an empty table called "shipments_base" to see all data and process it later. The shipments csv was a large file so I upload it to Google Cloud Storage and started the process creating a new table called "shipments_base" with autodetected schema and comma separated values to see raw data. I saw that the csv was a string separated by semicolons with the following info: shipment_reference + client_id + product + country + order_date + invoiced_weight + net_revenue + net_cost + shipment_source. I repeated this process, deleting the first row to avoid headers.
 
-Working with REGES I took some assumptions, to work quickly in order to have a table to start with the challenge:
+Working with **regexp** I took some assumptions, to work quickly in order to have a table to start with the challenge:
 
 - All countries codes have 2 letters
 - All product codes have 3 letters
@@ -105,21 +105,24 @@ With clients table I had an issue with the string, so I had to used SUBSTRING me
 
 ```SQL - SUBSTRING method
 SELECT SUBSTRING(client_id, 2) AS client_id,
-estimated_volume,
-SUBSTRING(DATE, 1, 10) AS date
+    estimated_volume,
+    SUBSTRING(DATE, 1, 10) AS date
 FROM clients;
 ```
 
-## Make checks to see if the data is clean
+### Since all this process took me so long to create the relational database properly and shipments data is too heavy, I decided to move on with an approach for the data analysis. 
+
+## 2. Make checks to see if the data is clean
 
 With clients table I had an issue with the string fields client_id and date, so I had to used SUBSTRING method to get the cleaned ones: 
 
 ```SQL - SUBSTRING method
 SELECT SUBSTRING(client_id, 2) AS client_id,
-estimated_volume,
-SUBSTRING(DATE, 1, 10) AS date
+    estimated_volume,
+    SUBSTRING(DATE, 1, 10) AS date
 FROM clients;
 ```
+I couldn't load on time shipments data, so I supposed I have to repeat the same process for the first and last field. From now on, all you can find is **my proposal on how to proceed the data analysis.**
 
 Checking how many null values are in clients for:
 
@@ -139,7 +142,7 @@ Checking how many null values there are in shipments for:
 - product
 - country
 - source
-- weight
+- invoiced_weight
 - revenue
 - costs
 
@@ -150,27 +153,46 @@ Check how many duplicated there are in shipments for:
 
 ### If it is not clean, what could be done to make it clean? What are the steps are taken and the results obtained by these cleansing activities?
 
-First, for client_id null values in clients table, we could estimate a deliveries volume based on a COUNT(shipment_reference) by client_id. 
-
-If there are records in clients without client_id, we could delete this info because is the link with shipments table.
+First, for client_id null values in clients table, we could delete this info because is the link with the shipments table. And if there are clients_id in the shipments table that are not included in clients one, we could estimate a deliveries volume based on a COUNT(shipment_reference) by client_id and minimum ordered date.
 
 Check all shipments record without a weight, but with revenue and/or profit. We could estimate an average weight based on an average info from each source, knowing their revenue and profits for grouped weights:
 
 ```SQL - source, weight, revenue and profits
 SELECT source,
-weight,
-net_revenue,
-net_profit,
-CASE WHEN weight < 5 THEN 'Lower than 5',
-WHEN weight >= 5 AND weight < 10 THEN '5 - 10'
-WHEN weight >= 10 AND weight < 25 THEN '10 - 25'
-WHEN weight >= 25 AND weight < 50 THEN '25 - 50'
-ELSE 'Higer than 50'
-END as AVG_weight
+    weight,
+    net_revenue,
+    net_profit,
+    CASE WHEN weight < 5 THEN 'Lower than 5'
+        WHEN weight >= 5 AND weight < 10 THEN '5 - 10'
+        WHEN weight >= 10 AND weight < 25 THEN '10 - 25'
+        WHEN weight >= 25 AND weight < 50 THEN '25 - 50'
+    ELSE 'Higer than 50'
+    END as AVG_weight
 FROM shipments
 GROUP BY source
 ```
 Also, knowing this information we could add an average revenue or profit if null, based on their weight.
 
-
 Check if the number of COUNT(shipments_reference) for each client_id is the same as estimated in clients table because it could be a reason for a deviation. In case it's not the same, create a table with all clients that have more deliveries than hired and how many are.
+
+### Provide Consolidated information – total revenue, total revenue by country, total revenue by source
+
+Once data is cleaned, we are able to provide consolidated information.  Since we have to calculated it for country and source, I include a ROLLUP with the GROUP BY.
+
+The query should look like this:
+
+```SQL - total revenue
+SELECT 
+    shipment_source,
+    country,
+    SUM(net_revenue) - SUM(net_costs) as revenue
+FROM shipments
+GROUP BY shipment_source, country WITH ROLLUP
+```
+
+
+
+
+
+
+To get total revenue, we have to subtract costs to revenue.

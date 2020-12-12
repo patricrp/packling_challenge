@@ -281,3 +281,7 @@ FROM shipments) shi
 ON cli.client_id = shi.client_id)res
 GROUP BY res.client_id
 ```
+
+After having all this info we can assign a value to each source and create a series called: source_score for each client_id. Then we can assign a value to each client_id based on their lifetime value on a serie called: ltv_score. And a serie to score each client_id based on the volume, called: volume_score.
+
+Finally, we would be able to sum all the scores for each client and order DESC to know which are the best clients. 

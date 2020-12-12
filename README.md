@@ -185,14 +185,29 @@ The query should look like this:
 SELECT 
     shipment_source,
     country,
-    SUM(net_revenue) - SUM(net_costs) as revenue
+    SUM(net_revenue) as revenue
 FROM shipments
 GROUP BY shipment_source, country WITH ROLLUP
 ```
 
+### Identify the clients with the lowest profitability // Identify the clients with the highest profitability
 
+Profitability could be calculated subtracting costs to revenue. If there is no requirement about date profitability, I decided to analyse all together to know the most and less profitability clients we have record for.
 
+The query should show the top and bottom rows. I limit the query to show 3 clients of each type.
 
-
-
-To get total revenue, we have to subtract costs to revenue.
+``` SQL - profitability
+SELECT
+    client_id,
+    SUM(net_revenue) - SUM(net_costs) as profitability
+FROM shipments
+ORDER BY profitability ASC
+LIMIT 3
+UNION ALL
+SELECT
+    client_id,
+    SUM(net_revenue) - SUM(net_costs) as profitability
+FROM shipments
+ORDER BY profitability DESC
+LIMIT 3
+```

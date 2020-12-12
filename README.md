@@ -212,3 +212,20 @@ FROM
 )
 WHERE TopFive <=5 OR BottomFive <=5
 ```
+
+
+### Identify the clients who generate more shipments than estimated // Identify the clients who generate fewer shipments than estimated
+
+To know if the clients are generating more or less shipments than estimated, we have to compare the number of shipments recorded in shipments with the estimated_deliveries_volume in the clients table
+
+```SQL - shipments
+SELECT shi.client_id,
+    COUNT(shi.shipment_reference) as num_deliveries,
+    shi.estimated_volume
+FROM shipments shi
+LEFT JOIN clients cli
+WHERE shi.client_id = cli.client_id
+GROUP BY shi.client_id
+```
+
+If we create two new series, one with the minimun and the other with the maximum volume of estimated deliveries, we can compare the number of shipment with both series. If the number of deliveries is less than the series minimum, those clients are using less than hired. On the other way, if the number of deliveries is higher than the max, those clients are using more deliveries than hired.

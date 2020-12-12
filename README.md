@@ -2,7 +2,9 @@
 
 SQL Challenge for Data Analysts
 
-> Load Data in a relational database
+## Load Data in a relational database
+
+### BIGQUERY
 
 I decided to use BigQuery for the challenge. After downloading both csv, I created a project called "PackLink-challenge" to start with the test. 
 
@@ -75,3 +77,100 @@ FROM  `packlink.shipments_base`
 ```
 
 I got some issues to fetch weight, revenue and cost separately and since I was running out of time, I decided to move on with Python - pandas library, in order to get 2 cleaned datasets there and come back later with renewal csv. 
+
+
+### Python - Pandas
+
+I loaded both raw csv as dataframes. Using string, split function with semicolon as separator which returned a series of arrays.
+
+```Python - pandas
+df_clients = pd.read_csv('input/clients.csv')
+df_clients.head()
+
+df = pd.DataFrame(df_clients['shipment_reference;client_id;product;country;order_date;invoiced_weight;net_revenue;net_cost;shipment_source'].str.split(';'))
+
+df_ship = pd.read_csv('input/shipments.csv', error_bad_lines=False)
+df_ship.head()
+
+df_1 = pd.DataFrame(df_ship['id;estimated_deliveries_volumes;created_at'].str.split(';'))
+```
+
+After facing some issues with iterrows() function, I decided to move on with MySQL.
+
+### MySQL
+
+After downloading and install MySQL, I created tables "clients" and "shipments" to import raw data. All fields were VARCHAR(200) without Primary Key and nullable values. I had to use ' as string indicator and semicolon as separator. 
+
+With clients table I had an issue with the string, so I had to used SUBSTRING method: 
+
+```SQL - SUBSTRING method
+SELECT SUBSTRING(client_id, 2) AS client_id,
+estimated_volume,
+SUBSTRING(DATE, 1, 10) AS date
+FROM clients;
+```
+
+## Make checks to see if the data is clean
+
+With clients table I had an issue with the string fields client_id and date, so I had to used SUBSTRING method to get the cleaned ones: 
+
+```SQL - SUBSTRING method
+SELECT SUBSTRING(client_id, 2) AS client_id,
+estimated_volume,
+SUBSTRING(DATE, 1, 10) AS date
+FROM clients;
+```
+
+Checking how many null values are in clients for:
+
+- client_id
+- estimated_volume
+- date
+
+Check how many duplicated there are in clients for:
+- client_id
+- client_id and date
+
+Checking how many null values there are in shipments for:
+
+- shipment_reference
+- client_id
+- date
+- product
+- country
+- source
+- weight
+- revenue
+- costs
+
+
+Check how many duplicated there are in shipments for:
+- shipment_reference
+
+
+### If it is not clean, what could be done to make it clean? What are the steps are taken and the results obtained by these cleansing activities?
+
+First, for client_id null values in clients table, we could estimate a deliveries volume based on a COUNT(shipment_reference) by client_id. 
+
+If there are records in clients without client_id, we could delete this info because is the link with shipments table.
+
+Check all shipments record without a weight, but with revenue and/or profit. We could estimate an average weight based on an average info from each source, knowing their revenue and profits for grouped weights:
+
+```SQL - source, weight, revenue and profits
+SELECT source,
+weight,
+net_revenue,
+net_profit,
+CASE WHEN weight < 5 THEN 'Lower than 5',
+WHEN weight >= 5 AND weight < 10 THEN '5 - 10'
+WHEN weight >= 10 AND weight < 25 THEN '10 - 25'
+WHEN weight >= 25 AND weight < 50 THEN '25 - 50'
+ELSE 'Higer than 50'
+END as AVG_weight
+FROM shipments
+GROUP BY source
+```
+Also, knowing this information we could add an average revenue or profit if null, based on their weight.
+
+
+Check if the number of COUNT(shipments_reference) for each client_id is the same as estimated in clients table because it could be a reason for a deviation. In case it's not the same, create a table with all clients that have more deliveries than hired and how many are.
